@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microservices Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+@media print { body * { visibility: hidden; } #invoicePreview, #invoicePreview * { visibility: visible; } #invoicePreview { position: fixed; inset: 0; margin: 0; padding: 40px; } #invoicePreview .modal-header, #invoicePreview .modal-footer { display: none; } }
+</style>
+</head>
+<body>
+<nav class="navbar navbar-dark bg-dark mb-4">
+  <div class="container-fluid">
+    <span class="navbar-brand mb-0 h1">Microservices Dashboard</span>
+  </div>
+</nav>
+
+<div class="container-fluid">
+  <ul class="nav nav-tabs mb-3" id="mainTabs">
+    <li class="nav-item"><button class="nav-link active" data-bs-target="#products">Products</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-target="#orders">Orders</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-target="#invoices">Invoices</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-target="#notifications">Notifications</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-target="#users">Users</button></li>
+  </ul>
+
+  <div class="tab-content">
+    <div class="tab-pane fade show active" id="products">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card"><div class="card-body">
+            <h5>Add Product</h5>
+            <input class="form-control mb-2" id="pName" placeholder="Name">
+            <input class="form-control mb-2" id="pPrice" type="number" step="0.01" placeholder="Price">
+            <input class="form-control mb-2" id="pQty" type="number" placeholder="Stock">
+            <button class="btn btn-primary w-100" onclick="createProduct()">Create</button>
+          </div></div>
+        </div>
+        <div class="col-md-8">
+          <div class="card"><div class="card-body">
+            <h5>Products</h5>
+            <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Name</th><th>Price</th><th>Stock</th><th></th></tr></thead><tbody id="productsBody"></tbody></table></div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="orders">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card"><div class="card-body">
+            <h5>Place Order</h5>
+            <select class="form-select mb-2" id="oProduct"><option>Loading products...</option></select>
+            <select class="form-select mb-2" id="oUserId"><option>Loading users...</option></select>
+            <input class="form-control mb-2" id="oQty" type="number" value="1" min="1">
+            <button class="btn btn-primary w-100" onclick="createOrder()">Place Order</button>
+          </div></div>
+        </div>
+        <div class="col-md-8">
+          <div class="card"><div class="card-body">
+            <h5>Orders</h5>
+            <div class="row g-2 mb-3">
+              <div class="col-md-3">
+                <select class="form-select form-select-sm" id="filterProduct"><option value="">All Products</option></select>
+              </div>
+              <div class="col-md-3">
+                <select class="form-select form-select-sm" id="filterUser"><option value="">All Users</option></select>
+              </div>
+              <div class="col-md-2">
+                <input class="form-control form-select-sm" id="filterDateFrom" type="date" placeholder="From">
+              </div>
+              <div class="col-md-2">
+                <input class="form-control form-select-sm" id="filterDateTo" type="date" placeholder="To">
+              </div>
+              <div class="col-md-2">
+                <input class="form-control form-select-sm" id="filterSearch" type="text" placeholder="Search..." oninput="loadOrders()">
+              </div>
+            </div>
+            <div class="table-responsive"><table class="table table-sm"><thead><tr><th>ID</th><th>Product</th><th>User</th><th>Qty</th><th>Price</th><th>Total</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="invoices">
+      <div class="card"><div class="card-body">
+        <h5>Invoices</h5>
+        <div class="table-responsive"><table class="table table-sm"><thead><tr><th>ID</th><th>Order</th><th>User</th><th>Amount</th><th>Date</th></tr></thead><tbody id="invoicesBody"></tbody></table></div>
+      </div></div>
+    </div>
+
+    <div class="tab-pane fade" id="notifications">
+      <div class="card"><div class="card-body">
+        <h5>Notifications</h5>
+        <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Message</th><th>Date</th></tr></thead><tbody id="notificationsBody"></tbody></table></div>
+      </div></div>
+    </div>
+
+    <div class="tab-pane fade" id="users">
+      <div class="row">
+        <div class="col-md-5">
+          <div class="card"><div class="card-body">
+            <h5 id="userFormTitle">Add User</h5>
+            <input class="form-control mb-2" id="uName" placeholder="Name">
+            <input class="form-control mb-2" id="uType" placeholder="Type (e.g. Customer, Admin)">
+            <input class="form-control mb-2" id="uEmail" type="email" placeholder="Email">
+            <input class="form-control mb-2" id="uTel" placeholder="Tel">
+            <input class="form-control mb-2" id="uCity" placeholder="City">
+            <input class="form-control mb-2" id="uAddress" placeholder="Address">
+            <input class="form-control mb-2" id="uCurrency" value="EGP" placeholder="Currency">
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary flex-fill" onclick="createUser()" id="userSubmitBtn">Create</button>
+              <button class="btn btn-secondary d-none" onclick="cancelEdit()" id="userCancelBtn">Cancel</button>
+            </div>
+          </div></div>
+        </div>
+        <div class="col-md-7">
+          <div class="card"><div class="card-body">
+            <h5>Users</h5>
+            <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Tel</th><th>City</th><th>Currency</th><th></th></tr></thead><tbody id="usersBody"></tbody></table></div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Invoice Preview Modal -->
+<div class="modal fade" id="invoiceModal" tabindex="-1">
+<div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-header">
+  <h5 class="modal-title">Invoice</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body" id="invoicePreview">
+  <div class="border p-4" style="font-family:'Courier New',monospace;">
+    <div class="text-center mb-4"><h3>INVOICE</h3></div>
+    <div class="row mb-3">
+      <div class="col-6"><strong>Invoice #:</strong><br><span id="invId"></span></div>
+      <div class="col-6 text-end"><strong>Date:</strong><br><span id="invDate"></span></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col-6"><strong>Order #:</strong><br><span id="invOrderId"></span></div>
+      <div class="col-6 text-end"><strong>Customer:</strong><br><span id="invUserId"></span></div>
+    </div>
+    <table class="table table-bordered mt-3">
+      <thead><tr><th>Description</th><th class="text-center">Qty</th><th class="text-end">Unit Price</th><th class="text-end">Amount</th></tr></thead>
+      <tbody id="invItems">
+      </tbody>
+      <tfoot><tr class="fw-bold"><td colspan="3" class="text-end">Total</td><td class="text-end" id="invTotal"></td></tr></tfoot>
+    </table>
+    <p class="text-muted text-center mt-3"><small>Thank you for your business!</small></p>
+  </div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-secondary" onclick="window.print()">Print / Export PDF</button>
+  <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+</div>
+</div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const API = '';
+let invoicesCache = [];
+
+function $(id) { return document.getElementById(id); }
+
+document.querySelectorAll('#mainTabs .nav-link').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#mainTabs .nav-link').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show','active'));
+    btn.classList.add('active');
+    document.querySelector(btn.dataset.bsTarget).classList.add('show','active');
+  });
+});
+
+// Products
+async function loadProducts() {
+  const res = await fetch(API + '/api/products');
+  const products = await res.json();
+  productsCache = products;
+  $('productsBody').innerHTML = products.map(p => `<tr>
+    <td>${p.name}</td>
+    <td>$${p.price.toFixed(2)}</td>
+    <td>${p.quantity}</td>
+    <td><button class="btn btn-sm btn-warning" onclick="decrementProduct('${p.id}')">Decrement</button></td>
+  </tr>`).join('');
+  const sel = $('oProduct');
+  const cur = sel.value;
+  sel.innerHTML = products.map(p => `<option value="${p.id}">${p.name} ($${p.price.toFixed(2)})</option>`).join('');
+  if (cur) sel.value = cur;
+  const fSel = $('filterProduct');
+  const fCur = fSel.value;
+  fSel.innerHTML = '<option value="">All Products</option>' + products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  if (fCur) fSel.value = fCur;
+}
+async function createProduct() {
+  const name = $('pName').value.trim(); if (!name) return alert('Name required');
+  const res = await fetch(API + '/api/products', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, price:parseFloat($('pPrice').value)||0, quantity:parseInt($('pQty').value)||0})});
+  if (res.ok) { $('pName').value=''; $('pPrice').value=''; $('pQty').value=''; loadProducts(); }
+  else alert('Failed');
+}
+async function decrementProduct(id) {
+  await fetch(API + '/api/products/' + id + '/decrement', {method:'POST'});
+  loadProducts();
+}
+
+// Orders
+async function loadOrders() {
+  const res = await fetch(API + '/api/orders');
+  const orders = await res.json();
+
+  const filterProd = $('filterProduct').value;
+  const filterUser = $('filterUser').value;
+  const filterFrom = $('filterDateFrom').value;
+  const filterTo = $('filterDateTo').value;
+  const filterSearch = $('filterSearch').value.toLowerCase();
+
+  const filtered = orders.filter(o => {
+    if (filterProd && o.productId !== filterProd) return false;
+    if (filterUser && o.userId !== filterUser) return false;
+    const d = new Date(o.createdAt);
+    if (filterFrom && d < new Date(filterFrom)) return false;
+    if (filterTo) { const end = new Date(filterTo); end.setDate(end.getDate() + 1); if (d >= end) return false; }
+    if (filterSearch) {
+      const prod = productsCache.find(p => p.id === o.productId);
+      const u = usersCache.find(x => x.id === o.userId);
+      const match = [o.id, prod?.name, u?.name, o.status, o.quantity.toString()].some(s => s?.toLowerCase().includes(filterSearch));
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  $('ordersBody').innerHTML = filtered.map(o => {
+    const prod = productsCache.find(p => p.id === o.productId);
+    const u = usersCache.find(x => x.id === o.userId);
+    const price = o.unitPrice || (prod ? prod.price : 0);
+    const total = price * o.quantity;
+    return `<tr>
+    <td><code>${o.id.slice(0,8)}</code></td>
+    <td>${prod ? prod.name : `<code>${o.productId.slice(0,8)}</code>`}</td>
+    <td>${u ? u.name : `<code>${o.userId.slice(0,8)}</code>`}</td>
+    <td>${o.quantity}</td>
+    <td>$${price.toFixed(2)}</td>
+    <td>$${total.toFixed(2)}</td>
+    <td><span class="badge ${o.status==='Invoiced'?'bg-success':'bg-warning'}">${o.status}</span></td>
+    <td>${new Date(o.createdAt).toLocaleString()}</td>
+    <td>${o.status==='Invoiced' ? `<button class="btn btn-sm btn-outline-info" onclick="previewInvoice('${o.id}')">Preview</button>` : `<button class="btn btn-sm btn-outline-primary" onclick="retryOrder('${o.id}')">Try Complete Order</button>`}</td>
+  </tr>`}).join('');
+}
+async function createOrder() {
+  const res = await fetch(API + '/api/orders', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({productId:$('oProduct').value, userId:$('oUserId').value, quantity:parseInt($('oQty').value)})});
+  if (res.ok) { alert('Order placed!'); setTimeout(loadOrders, 5000); }
+  else alert('Failed');
+}
+async function retryOrder(id) {
+  const res = await fetch(API + '/api/orders/' + id + '/retry', {method:'POST'});
+  if (res.ok) { alert('Retry queued! Check back in ~15s.'); } else { alert('Failed: '+await res.text()); }
+}
+
+// Invoices
+async function loadInvoices() {
+  const res = await fetch(API + '/api/invoices');
+  invoicesCache = await res.json();
+  $('invoicesBody').innerHTML = invoicesCache.map(i => {
+    const u = usersCache.find(x => x.id === i.userId);
+    return `<tr>
+    <td><code>${i.id.slice(0,8)}</code></td>
+    <td><code>${i.orderId.slice(0,8)}</code></td>
+    <td>${u ? u.name : `<code>${i.userId.slice(0,8)}</code>`}</td>
+    <td>$${i.amount.toFixed(2)}</td>
+    <td>${new Date(i.createdAt).toLocaleString()}</td>
+  </tr>`}).join('');
+}
+
+// Invoice Preview
+let productsCache = [];
+let usersCache = [];
+async function loadProductsForPreview() {
+  const res = await fetch(API + '/api/products');
+  productsCache = await res.json();
+}
+async function loadUsersForPreview() {
+  const res = await fetch(API + '/api/users');
+  usersCache = await res.json();
+}
+
+async function previewInvoice(orderId) {
+  let invoice = invoicesCache.find(i => i.orderId === orderId);
+  if (!invoice) {
+    const res = await fetch(API + '/api/invoices?orderId=' + orderId);
+    const list = await res.json();
+    invoice = list[0];
+    if (!invoice) return alert('No invoice found for this order');
+  }
+
+  // Fetch order to get productId and quantity
+  const ordersRes = await fetch(API + '/api/orders');
+  const orders = await ordersRes.json();
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return alert('Order not found');
+
+  // Find product and user
+  if (productsCache.length === 0) await loadProductsForPreview();
+  if (usersCache.length === 0) await loadUsersForPreview();
+  const product = productsCache.find(p => p.id === order.productId);
+  const user = usersCache.find(u => u.id === invoice.userId);
+
+  $('invId').textContent = invoice.id;
+  $('invDate').textContent = new Date(invoice.createdAt).toLocaleString();
+  $('invOrderId').textContent = invoice.orderId;
+  $('invUserId').textContent = user ? `${user.name} (${user.email})` : invoice.userId;
+
+  const qty = order.quantity;
+  const unitPrice = product ? product.price : invoice.amount / qty;
+  const lineTotal = qty * unitPrice;
+
+  $('invItems').innerHTML = `<tr>
+    <td>${product ? product.name : 'Product'}</td>
+    <td class="text-center">${qty}</td>
+    <td class="text-end">$${unitPrice.toFixed(2)}</td>
+    <td class="text-end">$${lineTotal.toFixed(2)}</td>
+  </tr>`;
+
+  $('invTotal').textContent = '$' + lineTotal.toFixed(2);
+  new bootstrap.Modal($('invoiceModal')).show();
+}
+
+// Users
+let editingUserId = null;
+
+async function loadUsers() {
+  const res = await fetch(API + '/api/users');
+  const users = await res.json();
+  $('usersBody').innerHTML = users.map(u => `<tr>
+    <td>${u.name}</td>
+    <td>${u.type}</td>
+    <td>${u.email}</td>
+    <td>${u.tel}</td>
+    <td>${u.city}</td>
+    <td>${u.currency}</td>
+    <td>
+      <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser('${u.id}')">Edit</button>
+      <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${u.id}')">Delete</button>
+    </td>
+  </tr>`).join('');
+  const sel = $('oUserId');
+  const cur = sel.value;
+  sel.innerHTML = users.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('');
+  if (cur) sel.value = cur;
+  const fSel = $('filterUser');
+  const fCur = fSel.value;
+  fSel.innerHTML = '<option value="">All Users</option>' + users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+  if (fCur) fSel.value = fCur;
+}
+
+function resetUserForm() {
+  $('uName').value = ''; $('uType').value = ''; $('uEmail').value = ''; $('uTel').value = '';
+  $('uCity').value = ''; $('uAddress').value = ''; $('uCurrency').value = 'EGP';
+  editingUserId = null;
+  $('userFormTitle').textContent = 'Add User';
+  $('userSubmitBtn').textContent = 'Create';
+  $('userCancelBtn').classList.add('d-none');
+}
+
+async function createUser() {
+  const body = {
+    name: $('uName').value.trim(), type: $('uType').value.trim(), email: $('uEmail').value.trim(),
+    tel: $('uTel').value.trim(), city: $('uCity').value.trim(), address: $('uAddress').value.trim(),
+    currency: $('uCurrency').value.trim() || 'EGP'
+  };
+  if (!body.name) return alert('Name required');
+
+  if (editingUserId) {
+    const res = await fetch(API + '/api/users/' + editingUserId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.ok) { resetUserForm(); loadUsers(); } else alert('Update failed');
+  } else {
+    const res = await fetch(API + '/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.ok) { resetUserForm(); loadUsers(); } else alert('Create failed');
+  }
+}
+
+async function editUser(id) {
+  const res = await fetch(API + '/api/users/' + id);
+  const u = await res.json();
+  $('uName').value = u.name; $('uType').value = u.type; $('uEmail').value = u.email;
+  $('uTel').value = u.tel; $('uCity').value = u.city; $('uAddress').value = u.address;
+  $('uCurrency').value = u.currency;
+  editingUserId = id;
+  $('userFormTitle').textContent = 'Edit User';
+  $('userSubmitBtn').textContent = 'Update';
+  $('userCancelBtn').classList.remove('d-none');
+}
+
+function cancelEdit() { resetUserForm(); }
+
+async function deleteUser(id) {
+  if (!confirm('Delete this user?')) return;
+  const res = await fetch(API + '/api/users/' + id, { method: 'DELETE' });
+  if (res.ok) loadUsers(); else alert('Delete failed');
+}
+
+// Load products and users on startup for preview
+loadProductsForPreview();
+loadUsersForPreview();
+
+// Notifications
+async function loadNotifications() {
+  const res = await fetch(API + '/api/notifications');
+  const notifications = await res.json();
+  $('notificationsBody').innerHTML = notifications.map(n => `<tr>
+    <td>${n.message}</td>
+    <td>${new Date(n.createdAt).toLocaleString()}</td>
+  </tr>`).join('');
+}
+
+loadProducts(); loadOrders(); loadInvoices(); loadNotifications(); loadUsers();
+setInterval(loadProducts, 5000);
+setInterval(loadOrders, 5000);
+setInterval(loadInvoices, 5000);
+setInterval(loadNotifications, 5000);
+setInterval(loadUsers, 5000);
+</script>
+</body>
+</html>
