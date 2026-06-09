@@ -50,5 +50,6 @@ public class InvoiceConsumer : IConsumer<CreateInvoiceCommand>
             Amount = invoice.Amount,
             CreatedAt = invoice.CreatedAt
         });
+
     }
 }
